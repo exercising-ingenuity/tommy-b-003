@@ -108,7 +108,7 @@ if __name__ == "__main__":
 	
 	min_delay = 1
 	max_delay = 4
-	iterations = 60
+	iterations = 10
 	
 	for i in range(iterations):
 		blink()
