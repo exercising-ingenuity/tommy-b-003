@@ -130,12 +130,12 @@ while True:
         }
         faces.append(face)
     checksum = struct.unpack_from("H", read_bytes, offset)
-    #print(num_faces, faces)
-    move_all_servos()
+    print(num_faces, faces)
+    #move_all_servos()
     
-    if num_faces > 0:
-        #print("I see you")
-        play_audio(wav_filepath)	    
+    #if num_faces > 0:
+     #   #print("I see you")
+     #   play_audio(wav_filepath)	    
         #move_servo()
         
     time.sleep(PERSON_SENSOR_DELAY)

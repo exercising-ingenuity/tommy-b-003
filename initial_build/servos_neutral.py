@@ -1,4 +1,5 @@
 import time
+import random
 from adafruit_servokit import ServoKit
 
 # Set channels to the number of servo channels on your kit.
@@ -89,52 +90,15 @@ def eyes_dw():
 	kit.servo[right_eye_v.servo].angle = right_eye_v.max
 	kit.servo[left_eye_v.servo].angle = left_eye_v.min
 
-# TEST FUNCTION - full range of motion for eyes
-def test_servos():
-
-	pause = 0.5
+def blink():
 	close_eyes()
-	time.sleep(pause)
+	blink_pause = random.uniform(0.14, 0.15)
+	time.sleep(blink_pause)
 	open_eyes()
-	time.sleep(pause)
-	eyes_right()
-	time.sleep(pause)
-	eyes_left()
-	time.sleep(pause)
-	all_servos_neutral()
-	time.sleep(pause)
-	eyes_up()
-	time.sleep(pause)
-	eyes_dw()
-	time.sleep(pause)
-	all_servos_neutral()
-
-# TEST FUNCTION - robot moves eyes and blinks multiple times
-def test_blink():
-	print("Begin blink program")
-	
-	time.sleep(3)
-	
-	eyes_right()
-	
-	min_delay = 1
-	max_delay = 4
-	iterations = 10
-	
-	for i in range(iterations):
-		blink()
-		delay = random.uniform(min_delay, max_delay)
-		
-		eyes_left()
-		
-		time.sleep(delay)
-	
-	all_servos_neutral()
-	print("End blink program")
 
 
 
 if __name__ == "__main__":
-	
-	test_servos()
-	
+		
+	all_servos_neutral()
+

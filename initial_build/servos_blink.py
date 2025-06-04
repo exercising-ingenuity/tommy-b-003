@@ -102,7 +102,7 @@ if __name__ == "__main__":
 	
 	print("Begin blink program")
 	
-	time.sleep(10)
+	time.sleep(3)
 	
 	eyes_right()
 	
@@ -113,6 +113,8 @@ if __name__ == "__main__":
 	for i in range(iterations):
 		blink()
 		delay = random.uniform(min_delay, max_delay)
+		
+		eyes_left()
 		
 		time.sleep(delay)
 	
