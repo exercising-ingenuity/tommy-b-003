@@ -1,5 +1,8 @@
-#MULTITHREADING import
+#GENERAL import
 import threading
+from cmd import Cmd
+import pyttsx3
+#engine = pyttsx3.init()
 
 #SERVO import
 import time
@@ -55,10 +58,12 @@ class Servo:
 # Servo calibrations
 upper_eyelid = Servo(0, 140, 80, 90)
 lower_eyelid = Servo(1, 140, 80, 90)
+# horizontal
 right_eye_h = Servo(2, 120, 20, 70)
+left_eye_h = Servo(4, 140, 30, 80)
+# vertical
 right_eye_v = Servo(3, 120, 20, 80)
-left_eye_h = Servo(4, 140, 30, 90)
-left_eye_v = Servo(5, 120, 60, 90)
+left_eye_v = Servo(5, 120, 60, 85)
 
 
 def basic_test_servo():
@@ -136,7 +141,8 @@ def eyes_dw():
 
 def blink(min_delay, max_delay, iterations):
 	
-	for i in range(iterations):
+	#for i in range(iterations):
+	while True:
 		close_eyes()
 		blink_pause = random.uniform(0.14, 0.15)
 		time.sleep(blink_pause)
@@ -144,26 +150,61 @@ def blink(min_delay, max_delay, iterations):
 		delay = random.uniform(min_delay, max_delay)
 		time.sleep(delay)
 
-def eyes_look():
+def eyes_look(x_center,y_center):
 
-	for i in range(10):
-		pause = 0.5
-		eyes_right()
-		time.sleep(pause)
-		eyes_left()
-		time.sleep(pause)
-		eye_servos_neutral()
-		time.sleep(pause)
-		eyes_up()
-		time.sleep(pause)
-		eyes_dw()
-		time.sleep(pause)
-		eye_servos_neutral()
+	#print(x_center, ", ", y_center)
+
+	x_max = 240 #look right
+	x_min = 20 #look left
+	x_neutral = 140
+	y_max = 250 #look down
+	y_min = 20 #look up
+	y_neutral = 170
+
+	# constrain max and min x
+	if x_center>x_max:
+		x = x_max
+	elif x_center<x_min:
+		x = x_min
+	else:
+		x = x_center
+	
+	# constrain max and min y
+	if y_center>y_max:
+		y = y_max
+	elif x_center<y_min:
+		y = y_min
+	else:
+		y = y_center
+
+	#normalize input range
+	look_x = (x-x_min)/(x_max-x_min)
+	look_y = (y-y_min)/(y_max-y_min)
+
+	#print("new:",x, ", ", y)
+	print("look:",look_x,", ", look_y)
+
+	# Calculate servo angle based on normalized input
+	look = {
+		"reye_x": round((1-look_x)*(right_eye_h.max-right_eye_h.min)+right_eye_h.min),
+		"leye_x": round((1-look_x)*(left_eye_h.max-left_eye_h.min)+left_eye_h.min),
+		"reye_y": round(look_y*(right_eye_v.max-right_eye_v.min)+right_eye_v.min),
+		"leye_y": round((1-look_y)*(left_eye_v.max-left_eye_v.min)+left_eye_v.min)
+	}
+
+	#print(look)
+
+	# Move servos
+	kit.servo[right_eye_h.servo].angle = look["reye_x"]
+	kit.servo[left_eye_h.servo].angle = look["leye_x"]
+	kit.servo[right_eye_v.servo].angle = look["reye_y"]
+	kit.servo[left_eye_v.servo].angle = look["leye_y"]
+	time.sleep(0.5)
 
 ########## PERSON SENSOR functions ##########
 def person_sensor(iterations, person_sensor_delay):
 	n=0
-	while n<iterations:
+	while True:
 		try:
 			read_bytes = i2c_handle.read(PERSON_SENSOR_RESULT_BYTE_COUNT)
 		except OSError as error:
@@ -188,8 +229,10 @@ def person_sensor(iterations, person_sensor_delay):
 			face = {
 				"box_confidence": box_confidence,
 				"box_left": box_left,
-				"box_top": box_top,
+				"x_center": box_left+(box_right-box_left)/2,
 				"box_right": box_right,
+				"box_top": box_top,
+				"y_center": box_top+(box_bottom-box_top)/2,
 				"box_bottom": box_bottom,
 				"id_confidence": id_confidence,
 				"id": id,
@@ -197,7 +240,15 @@ def person_sensor(iterations, person_sensor_delay):
 			}
 			faces.append(face)
 		checksum = struct.unpack_from("H", read_bytes, offset)
-		print(num_faces, faces)
+		#print(num_faces, faces)
+
+		if num_faces >0:
+			first_face = faces[0]
+			eyes_look(first_face['x_center'],first_face['y_center'])
+		else:
+			print("no faces")
+
+		# Calculate box center postion
 		n += 1
 		time.sleep(person_sensor_delay)
 
@@ -262,36 +313,101 @@ def test_look():
 		time.sleep(pause)
 		eye_servos_neutral()
 
+#def speak(words):
+	#engine.say(words)
+	#engine.runAndWait()
+
+
+
+class TommyShell(Cmd):
+	intro = " Welcome to the Tommy-B-003 command interface. Type help or ? to list commands."
+	prompt = "(TommyShell) "
+
+	#def do_speak(self, line):
+	#	speak("I am a robot")
+
+	def do_exit(self, line):
+		"""Exit the TommyShell."""
+		print("Exiting!")
+		return True # Return True to exit the command loop
+	
+	def do_testservos(self, line):
+		"""Run servos through full range of motion"""
+		test_servos()
+
+	def do_closed(self, line):
+		"""Close robot eyes"""
+		close_eyes()
+
+	def do_open(self, line):
+		"""Open robot eyes"""
+		open_eyes()
+
+	def do_down(self, line):
+		"""Robot eyes look down"""
+		eyes_dw()
+
+	def do_up(self, line):
+		"""Robot eyes look up"""
+		eyes_up()
+
+	def do_left(self, line):
+		"""Robot eyes look left"""
+		eyes_left()
+	
+	def do_right(self, line):
+		"""Robot eyes look right"""
+		eyes_right()
+	
+	def do_neutral(self, line):
+		"""Robot eyes, neutralize all servos"""
+		eye_servos_neutral()
+	
+	def do_runtommymain(self, line):
+		"""Run Tommy-B-003 Main Code"""
+		print(" Running Tommy-B-003 Main Code, press ctrl-C to exit")
+
+		# blink variables
+		min_delay = 1
+		max_delay = 4
+		iterations = 100
+		# blink thread
+		t_blink = threading.Thread(target=blink, args=(min_delay, max_delay, iterations))
+		
+		# eyes look thread
+		t_look = threading.Thread(target=eyes_look, args=())
+
+		# person sensor variables
+		person_sensor_delay = 0.1# How long to pause between sensor polls.
+		# person sensor thread
+		t_person_sensor = threading.Thread(target=person_sensor, args=(iterations, person_sensor_delay))
+
+		# Open eyes
+		open_eyes()
+		time.sleep(1)
+		
+		try:
+		# START THREADS
+			while True:
+				t_blink.start()
+				#t_look.start()
+				t_person_sensor.start()
+		except KeyboardInterrupt:
+			eye_servos_neutral()
+			time.sleep(1)
+			close_eyes()
+			time.sleep(1)
+		
+		#	Close eyes
+		open_eyes()
+		time.sleep(1)
+		eyes_left()
+		time.sleep(1)
+		eye_servos_neutral()
+		time.sleep(1)
+		close_eyes()
+		time.sleep(1)
 
 if __name__ == "__main__":
-	
-	#test_servos()
-
-	# blink variables
-	min_delay = 1
-	max_delay = 4
-	iterations = 5
-	# blink thread
-	t_blink = threading.Thread(target=blink, args=(min_delay, max_delay, iterations))
-	
-	# eyes look thread
-	t_look = threading.Thread(target=eyes_look, args=())
-
-	# person sensor variables
-	person_sensor_delay = 0.4# How long to pause between sensor polls.
-	# person sensor thread
-	t_person_sensor = threading.Thread(target=person_sensor, args=(iterations, person_sensor_delay))
-
-	#blink(min_delay,max_delay,iterations)
-	#eyes_look()
-	#person_sensor()
-
-	# START THREADS
-	t_blink.start()
-	t_look.start()
-	t_person_sensor.start()
-
-	# END THREADS
-	t_blink.join()
-	t_look.join()
-	t_person_sensor.join()
+	TommyShell().cmdloop()
+	#speak("I am a robot")
