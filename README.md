@@ -1,2 +1,2 @@
 # tommy-b-003
-An AI animatronic robot
+An animatronic robot utilizing the OpenAI realtime API for conversation.
